@@ -1,18 +1,20 @@
 package fr.esgi.rent.beans;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.stream.Stream;
 
 import static fr.esgi.rent.beans.EnergyClassification.D;
 import static fr.esgi.rent.beans.PropertyType.FLAT;
 import static fr.esgi.rent.samples.RentalPropertySample.oneRentalProperty;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class RentalPropertyTest {
 
@@ -38,14 +40,13 @@ class RentalPropertyTest {
 
     @ParameterizedTest
     @MethodSource("provideCsvValuesAndExpectedRentalProperty")
-    void shouldCreate(String[] csvValues, RentalProperty expectedRentalProperty) {
-        CSVRecord csvRecord = mock(CSVRecord.class);
+    void shouldCreate(String[] csvValues, RentalProperty expectedRentalProperty) throws IOException {
+        String csvLine = String.join(",", csvValues);
+        CSVFormat csvFormat = CSVFormat.Builder.create().setHeader(HEADERS).build();
+        CSVParser parser = csvFormat.parse(new StringReader(csvLine));
+        CSVRecord csvRecord = parser.getRecords().get(0);
 
-        for (int i = 0; i < HEADERS.length; i++) {
-            when(csvRecord.get(HEADERS[i])).thenReturn(csvValues[i]);
-        }
-
-        RentalProperty rentalProperty = RentalProperty.create(csvRecord, HEADERS, (csvField) -> true);
+        RentalProperty rentalProperty = RentalProperty.create(csvRecord, HEADERS, csvField -> true);
 
         assertThat(rentalProperty).isEqualTo(expectedRentalProperty);
     }
